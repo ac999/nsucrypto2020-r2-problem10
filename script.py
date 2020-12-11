@@ -189,9 +189,8 @@ def task2():
         P2 = PolynomialMessage(msg2)
         tag1 = split_in_blocks(msg1.auth_tag)[0]
         tag2 = split_in_blocks(msg2.auth_tag)[0]
-
-        print(P1(5202301312))
-
+        P = Polynomial()
+        P = P1 + P2
         # Compute H by finding root of
         # P1(X) + P2(X) + tag1 + tag2
 
