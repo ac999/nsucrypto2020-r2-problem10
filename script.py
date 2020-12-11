@@ -138,6 +138,32 @@ class Polynomial():
     def degree(self):
         return len(self.coefficients)
 
+    def derivative(self):
+        derived_coeffs = []
+        exponent = len(self.coefficients) - 1
+        for i in range(len(self.coefficients)-1):
+            derived_coeffs.append(self.coefficients[i] & exponent)
+            exponent -= 1
+        return PolynomialCoefficients(derived_coeffs)
+
+    def __str__(self):
+        res = ""
+        degree = len(self.coefficients) - 1
+        res += str(self.coefficients[0]) + "x^" + str(degree)
+        for i in range(1, len(self.coefficients)-1):
+            coeff = self.coefficients[i]
+            if coeff < 0:
+                res += " - " +  str(-coeff) + "x^" + str(degree - i)
+            else:
+                res += " + " +  str(coeff) + "x^" + str(degree - i)
+
+        if self.coefficients[-1] < 0:
+            res += " - " + str(-self.coefficients[-1])
+        else:
+            res += " + " + str(self.coefficients[-1])
+
+        return res
+
 class PolynomialCoefficients(Polynomial):
 
     def __init__(self, coefficients):
@@ -164,6 +190,10 @@ class PolynomialMessage(Polynomial):
         result = list(map(lambda x: x[0] ^ x[1], zip_longest(c1, c2)))
         return PolynomialCoefficients(result[::-1])
 
+def berlekamp(poly: Polynomial, c: int):
+
+    pass
+
 def task2():
     print("\nTask2\n")
 
@@ -187,6 +217,7 @@ def task2():
         print("Same IV on \'{}\' and \'{}\'".format(msg1.name, msg2.name))
         P1 = PolynomialMessage(msg1)
         P2 = PolynomialMessage(msg2)
+        
         tag1 = split_in_blocks(msg1.auth_tag)[0]
         tag2 = split_in_blocks(msg2.auth_tag)[0]
         P = Polynomial()
