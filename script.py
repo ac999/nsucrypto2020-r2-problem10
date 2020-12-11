@@ -6,6 +6,8 @@ import struct
 import os
 from collections import defaultdict
 
+BYTE_ORDER = 'big'
+
 def find_Collision_On_Dictionary(_dictionary):
     dd = defaultdict(set)
 
@@ -80,18 +82,18 @@ def task1():
         message             = Message(DIRPATH+FILENAME)
         dict_iv[FILENAME]   = message.iv
 
-#Replaced "Hello, Bob! How’s everything?" with "Hello, Bob! How's everything?"
     message0_plain_payload  = "Hello, Bob! How's everything?".encode("utf-8")
     message0                = Message(os.path.join(DIRPATH, FILENAME0))
     known_stream        = byte_xor(message0_plain_payload, message0.en_payload)
-
-    #list of messages that use the same iv as 0.message
+    '''Replaced "Hello, Bob! How’s everything?"
+        with    "Hello, Bob! How's everything?'''
+    '''list of messages that use the same iv as 0.message'''
     possible_attack = [os.path.join(DIRPATH, k) for k, v in dict_iv.items() if
     v==dict_iv['0.message'] and k != '0.message']
-    #only messages with payload smaller or equal than 0.message's payload
+    '''only messages with payload smaller or equal than 0.message's payload'''
     possible_attack = [k for k in possible_attack if get_payload_size(k) <=\
     get_payload_size(os.path.join(DIRPATH, '0.message') ) ]
-    #recover the messages by xoring the encrypted payload with the known_stream
+    '''recover the messages by xoring the encrypted payload with the known_stream'''
     for message in possible_attack:
         _message            = Message(message)
         decrypted_payload   = byte_xor(_message.en_payload, known_stream)\
@@ -99,10 +101,65 @@ def task1():
 
         print("\'{}\': \'{}\'".format(_message.name, decrypted_payload))
 
-
 def split_in_blocks(payload):
-    for i in range(len(payload)/16):
-        print(i)
+    return [int.from_bytes(payload[i:i+16], BYTE_ORDER)
+    for i in range(0, len(payload), 16)]
+
+def int_to_bytes(x: int):
+    return x.to_bytes((x.bit_length() + 7) // 8, BYTE_ORDER)
+
+def zip_longest(iter1, iter2, fillValue = 0):
+
+    for i in range(max(len(iter1), len(iter2))):
+        if i >= len(iter1):
+            yield (fillValue, iter2[i])
+        elif i>= len(iter2):
+            yield (iter1[i], fillValue)
+        else:
+            yield (iter1[i], iter2[i])
+
+class Polynomial():
+    
+    def __init__(self):
+        self.coefficients = list()
+
+    def __repr__(self):
+        '''Return the canonical string representation of the polynomial'''
+        return "Polynomial {}".format(str(self.coefficients))
+
+    def __call__(self, X):
+        result = 0
+        for coeff in self.coefficients:
+            result = result * X + coeff
+        return result
+
+    def degree(self):
+        return len(self.coefficients)
+
+class PolynomialCoefficients(Polynomial):
+
+    def __init__(self, *coefficients):
+        self.coefficients = list(coefficients)
+
+class PolynomialMessage(Polynomial):
+
+    def __init__(self, msg: Message):
+        '''Create the polynom based on the message'''
+        self.L = int_to_bytes(len(msg.header)) +\
+        int_to_bytes(len(msg.en_payload))
+        self.L = split_in_blocks(self.L)[0]
+        self.coefficients = split_in_blocks(msg.en_payload)
+        self.A1 = split_in_blocks(msg.header)[0]
+        self.A2 = split_in_blocks(msg.iv)[0]
+        self.coefficients.insert(0, self.A2)
+        self.coefficients.insert(0, self.A1)
+        self.coefficients.append(self.L)
+
+    def __add__(self, polynomial):
+        c1 = self.coefficients[::-1]
+        c2 = polynomial.coefficients[::-1]
+        result = list(map(lambda x: x[0] ^ x[1], zip_longest(c1, c2)))
+        return PolynomialCoefficients(result[::-1])
 
 def task2():
     print("\nTask2\n")
@@ -115,8 +172,6 @@ def task2():
     for FILENAME in FILENAMES:
         message = Message(os.path.join(DIRPATH, FILENAME))
         dict_iv[os.path.join(DIRPATH, FILENAME)] = message.iv
-        print("{} has blocks:".format(message.name))
-        split_in_blocks(message.en_payload)
 
     #Find IV collisions on the messages from Task_2
     dict_iv = find_Collision_On_Dictionary(dict_iv)
@@ -127,6 +182,10 @@ def task2():
         msg1 = Message(pair[0])
         msg2 = Message(pair[1])
         print("Same IV on \'{}\' and \'{}\'".format(msg1.name, msg2.name))
+        P1 = PolynomialMessage(msg1)
+        P2 = PolynomialMessage(msg2)
+
+        print(P1 + P2)
         # Compute H
         # Compute S
         # Create tag for wanted criphertext
