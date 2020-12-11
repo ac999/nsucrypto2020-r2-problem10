@@ -130,7 +130,9 @@ class Polynomial():
     def __call__(self, X):
         result = 0
         for coeff in self.coefficients:
-            result = result * X + coeff
+            # in GF(2), * is considered 'and'
+            # in GF(2), + is considered 'XOR'
+            result = result & X ^ coeff
         return result
 
     def degree(self):
@@ -158,6 +160,7 @@ class PolynomialMessage(Polynomial):
     def __add__(self, polynomial):
         c1 = self.coefficients[::-1]
         c2 = polynomial.coefficients[::-1]
+        # in GF(2), + is considered 'XOR'
         result = list(map(lambda x: x[0] ^ x[1], zip_longest(c1, c2)))
         return PolynomialCoefficients(result[::-1])
 
@@ -184,10 +187,18 @@ def task2():
         print("Same IV on \'{}\' and \'{}\'".format(msg1.name, msg2.name))
         P1 = PolynomialMessage(msg1)
         P2 = PolynomialMessage(msg2)
+        tag1 = split_in_blocks(msg1.auth_tag)[0]
+        tag2 = split_in_blocks(msg2.auth_tag)[0]
 
-        print(P1 + P2)
-        # Compute H
-        # Compute S
+        print(P1(5202301312))
+
+        # Compute H by finding root of
+        # P1(X) + P2(X) + tag1 + tag2
+
+        # After finding H,
+        # Compute S by the following relation
+        # S = P1(H) + tag1
+
         # Create tag for wanted criphertext
 
 task1()
