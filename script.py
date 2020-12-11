@@ -119,7 +119,7 @@ def zip_longest(iter1, iter2, fillValue = 0):
             yield (iter1[i], iter2[i])
 
 class Polynomial():
-    
+
     def __init__(self):
         self.coefficients = list()
 
@@ -138,8 +138,8 @@ class Polynomial():
 
 class PolynomialCoefficients(Polynomial):
 
-    def __init__(self, *coefficients):
-        self.coefficients = list(coefficients)
+    def __init__(self, coefficients):
+        self.coefficients = coefficients
 
 class PolynomialMessage(Polynomial):
 
