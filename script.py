@@ -99,6 +99,11 @@ def task1():
 
         print("\'{}\': \'{}\'".format(_message.name, decrypted_payload))
 
+
+def split_in_blocks(payload):
+    for i in range(len(payload)/16):
+        print(i)
+
 def task2():
     print("\nTask2\n")
 
@@ -110,6 +115,8 @@ def task2():
     for FILENAME in FILENAMES:
         message = Message(os.path.join(DIRPATH, FILENAME))
         dict_iv[os.path.join(DIRPATH, FILENAME)] = message.iv
+        print("{} has blocks:".format(message.name))
+        split_in_blocks(message.en_payload)
 
     #Find IV collisions on the messages from Task_2
     dict_iv = find_Collision_On_Dictionary(dict_iv)
